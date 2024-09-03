@@ -1,0 +1,9 @@
+streamlit
+python-dotenv
+langchain-core
+langchain-community
+langchain-groq
+mysql-connector-python
+sounddevice
+groq
+deepgram-sdk
