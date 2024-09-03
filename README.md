@@ -14,7 +14,7 @@ This project is a Streamlit-based chat application that interacts with a MySQL d
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/sql-database-assistant-chat.git
+   git clone https://github.com/maryamnazir1/sql-database-assistant-chat.git
    cd sql-database-assistant-chat
 
 2. **Install Dependencies**
