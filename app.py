@@ -119,7 +119,7 @@ with input_container:
 
 # Update chat history display after processing the input
 with chat_container:
-    st.subheader("Chat with Database")
+    st.subheader("Database Assistant Chat")
     for message in st.session_state.chat_history:
         if isinstance(message, AIMessage):
             with st.chat_message("AI"):
