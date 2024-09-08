@@ -7,3 +7,5 @@ mysql-connector-python
 sounddevice
 groq
 deepgram-sdk
+audio_recorder_streamlit
+streamlit_float
