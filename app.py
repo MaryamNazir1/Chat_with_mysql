@@ -1,136 +1,144 @@
+import os
 import streamlit as st
+from audio_recorder_streamlit import audio_recorder
+from streamlit_float import float_init
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage
-from db_sql_module import init_database, get_response
-from stt_module import save_audio_to_file, record_audio, transcribe_audio
-from tts_module import generate_speech
+from db_sql_module import init_database, get_response  # Import your DB functions
+from utils import autoplay_audio, transcribe_audio, generate_speech
 
-# Load environment variables
-load_dotenv()
+st.set_page_config(page_title="MySQL Database Assistant", page_icon="💬")
 
-# Streamlit page configuration
-st.set_page_config(page_title="Database Assistant Chat", page_icon=":speech_balloon:")
+def load_env():
+    load_dotenv()  # Load environment variables
 
-# Initialize session state
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
-        AIMessage(content="Hello! I'm a SQL assistant. Ask me anything about your database."),
-    ]
-
-if "user_query" not in st.session_state:
-    st.session_state.user_query = ""
-
-if "last_query" not in st.session_state:
-    st.session_state.last_query = ""
-
-if "recording_complete" not in st.session_state:
-    st.session_state.recording_complete = False
-
-# Sidebar for database connection
-with st.sidebar:
-    st.subheader("Connect to Your SQL Database")
-    st.write("This is a simple chat application using MySQL. Connect to the database and start chatting.")
+def initialize_session_state():
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm here to assist you with your SQL queries."}]
     
-    st.text_input("Host", value="localhost", key="Host")
-    st.text_input("Port", value="3306", key="Port")
-    st.text_input("User", value="root", key="User")
-    st.text_input("Password", type="password", value="admin", key="Password")
-    st.text_input("Database", value="onlinestore", key="Database")
-    
-    if st.button("Connect"):
-        with st.spinner("Connecting to database..."):
-            db = init_database(
-                st.session_state["User"],
-                st.session_state["Password"],
-                st.session_state["Host"],
-                st.session_state["Port"],
-                st.session_state["Database"]
-            )
-            st.session_state.db = db
-            st.success("Connected to database!")
+    if "audio_query" not in st.session_state:
+        st.session_state.audio_query = None
 
-# Chat history display
-chat_container = st.container()  # Container for chat history
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []  # Initialize chat history
 
-# Input section for user query
-input_container = st.container()  # Container for input box and button
+def clear_chat_history():
+    st.session_state.messages = []  # Clear all messages
+    st.session_state.messages.append({"role": "assistant", "content": "Hello! I'm here to assist you with your SQL queries."})  # Add initial message
+    st.session_state.audio_query = None  # Clear the audio input history
+    st.session_state.chat_history = []  # Clear the chat history
 
-with input_container:
-    # st.subheader("Ask a question about your database:")
-    col1, col2 = st.columns([8, 1])
-    
-    with col1:
-        # Show user query in the text input
-        user_query = st.text_input("Type your query here...", value=st.session_state.user_query, key="input_query", 
-                                   placeholder="Type your query here...")
-    
-    with col2:
-        record_button = st.button("🎤", key="record_button")
+def user_input(user_question, db, chat_history):
+    # Process the user question and get the response from the database
+    response = get_response(user_question, db, chat_history)
+    return response  # Return the response
 
-    # Perform search if user manually enters text
-    if user_query and user_query != st.session_state.last_query:
-        st.session_state.last_query = user_query
-        st.session_state.chat_history.append(HumanMessage(content=user_query))
+def main():
+    load_env()
+    initialize_session_state()
+    float_init()  # Initialize floating features
+
+    st.title("MySQL Database Assistant 💬")  # Main title
+
+    # Sidebar for database connection
+    with st.sidebar:
+        st.title("Database Connection")
+        st.text_input("Host", value="localhost", key="Host")
+        st.text_input("Port", value="3306", key="Port")
+        st.text_input("User", value="root", key="User")
+        st.text_input("Password", type="password", value="admin", key="Password")
+        st.text_input("Database", value="onlinestore", key="Database")
         
-        with st.spinner("Generating response..."):
-            response = get_response(user_query, st.session_state.db, st.session_state.chat_history)
-            st.session_state.chat_history.append(AIMessage(content=response))
-            response_audio_file = generate_speech(response)  # Generate speech from response
-            st.session_state.chat_history[-1].audio_file_path = response_audio_file
-        
-        # Clear the input box after processing the query
-        st.session_state.user_query = ""
-        st.experimental_rerun()  # Rerun the app to clear the input box
+        if st.button("Connect"):
+            with st.spinner("Connecting to database..."):
+                db = init_database(
+                    st.session_state["User"],
+                    st.session_state["Password"],
+                    st.session_state["Host"],
+                    st.session_state["Port"],
+                    st.session_state["Database"]
+                )
+                st.session_state.db = db
+                st.success("Connected to database!")
 
-    # Check if the record button is clicked
-    if record_button:
-        st.session_state.recording_complete = False  # Reset recording state
-        with st.spinner("Recording..."):
-            duration = 10  # Fixed recording duration
-            audio_data = record_audio(duration)  # Record audio
-        st.session_state.recording_complete = True  # Set recording complete
+        st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
-        # Process the audio after recording
-        temp_file_path = save_audio_to_file(audio_data)  # Save the recorded audio
-        transcribed_text = transcribe_audio(temp_file_path)  # Get the text from the audio
+    # Create a footer container for the input
+    footer_container = st.container()
+
+    with footer_container:
+        # Create columns for text input and audio recorder
+        col1, col2 = st.columns([9, 1])
         
-        # Update the user query with the recognized text
-        if transcribed_text and transcribed_text.strip() != "":
-            st.session_state.user_query = transcribed_text  # Update session state with recognized text
+        with col1:
+            # Text input for user question
+            text_input = st.chat_input("Type your query here...")  # Use chat_input for text entry
+        
+        with col2:
+            # Audio recorder for voice input
+            audio_bytes = audio_recorder(text="", icon_size="2x", recording_color="#7C0A02", neutral_color="#FFFFFF")
+
+    # Float the footer container at the bottom of the screen
+    footer_container.float("bottom:20px;")
+
+    # Display chat messages
+    for message in st.session_state.messages:
+        with st.chat_message(message['role']):
+            st.write(message['content'])
+
+    # Handle audio input (only process new audio)
+    if audio_bytes and st.session_state.get('processed_audio_query') != audio_bytes:
+        with st.chat_message("user"):
+            with st.spinner("Transcribing..."):
+                # Write the audio bytes to a temporary file
+                webm_file_path = "temp_audio.wav"
+                with open(webm_file_path, "wb") as f:
+                    f.write(audio_bytes)
+
+                # Convert the audio to text
+                transcript = transcribe_audio(webm_file_path)
+                os.remove(webm_file_path)
+                if transcript:
+                    st.session_state.messages.append({"role": "user", "content": transcript})
+                    st.session_state.audio_query = transcript  # Store the processed audio query
+                    st.session_state.processed_audio_query = audio_bytes  # Mark audio as processed
+                    st.write(transcript)
+
+    # Check if there is any user input (text or voice)
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        user_question = st.session_state.messages[-1]["content"]  # Get the last user input
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking🤔..."):
+                response = user_input(user_question, st.session_state.db, st.session_state.chat_history)  # Pass db and chat_history
+                st.session_state.messages.append({"role": "assistant", "content": response})  # Append the assistant response
+
+                # Display the response first
+                st.write(response)  # Display the assistant's text response
+
+                # Generate audio response after displaying text
+            with st.spinner("Generating audio response..."):    
+                audio_file = generate_speech(response)
+                autoplay_audio(audio_file)  # Play the audio response
+                os.remove(audio_file)  # Clean up the audio file after playing
             
-            # Automatically perform the search if the query is different
-            if st.session_state.user_query != st.session_state.last_query:
-                st.session_state.last_query = st.session_state.user_query  # Update the last query
+    # Check if there is any text input
+    if text_input:
+        with st.chat_message("user"):
+            st.write(text_input)  # Display the user's text input
+            st.session_state.messages.append({"role": "user", "content": text_input})  
 
-                # Store the user query in session state
-                st.session_state.chat_history.append(HumanMessage(content=st.session_state.user_query, audio_file_path=temp_file_path))
+        # Handle text input search
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking🤔..."):
+                response = user_input(text_input, st.session_state.db, st.session_state.chat_history)  # Pass db and chat_history
+                st.session_state.messages.append({"role": "assistant", "content": response})  # Append the assistant response
+                # Display the response first
+                st.write(response)  # Display the assistant's text response
 
-                # AI response
-                with st.spinner("Generating response..."):
-                    response = get_response(st.session_state.user_query, st.session_state.db, st.session_state.chat_history)
-                    st.session_state.chat_history.append(AIMessage(content=response))
-                    response_audio_file = generate_speech(response)  # Generate speech from response
-                    st.session_state.chat_history[-1].audio_file_path = response_audio_file
+                # Generate audio response after displaying text
+            with st.spinner("Generating audio response..."):    
+                audio_file = generate_speech(response)
+                autoplay_audio(audio_file)  # Play the audio response
+                os.remove(audio_file)  # Clean up the audio file after playing
 
-        # Clear the input box after processing the query
-        st.session_state.user_query = ""
-        st.experimental_rerun()  # Rerun the app to clear the input box
-
-
-# Update chat history display after processing the input
-with chat_container:
-    st.subheader("Database Assistant Chat")
-    for message in st.session_state.chat_history:
-        if isinstance(message, AIMessage):
-            with st.chat_message("AI"):
-                st.markdown(f"<div style='background-color: #1e1e1e; padding: 10px; border-radius: 5px; text-align: left; color: white;'>"
-                            f"{message.content}</div>", unsafe_allow_html=True)
-                if hasattr(message, 'audio_file_path') and message.audio_file_path:
-                    st.audio(message.audio_file_path, format='audio/wav')
-
-        elif isinstance(message, HumanMessage):
-            with st.chat_message("Human"):
-                st.markdown(f"<div style='background-color: #007acc; padding: 10px; border-radius: 5px; text-align: left; color: white;'>"
-                            f"{message.content}</div>", unsafe_allow_html=True)
-                if hasattr(message, 'audio_file_path') and message.audio_file_path:
-                    st.audio(message.audio_file_path, format='audio/wav')
+if __name__ == "__main__":
+    main()
