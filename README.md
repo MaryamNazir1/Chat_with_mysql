@@ -1,91 +1,92 @@
-# SQL Database Assistant Chat
+# MySQL Database Assistant
 
-This project is a Streamlit-based chat application that interacts with a MySQL database. It supports both text and voice input for querying the database, and provides responses in both text and synthesized speech formats. The app integrates SQL communication, voice transcription, and natural language processing to enhance user interaction with databases.
+## Overview
+
+The MySQL Database Assistant is a web application built using Streamlit that integrates voice and text input to interact with a MySQL database. Users can ask questions about the database, and the assistant responds with natural language answers. The app supports both text and voice inputs, transcribes voice queries, and generates audio responses for the answers.
 
 ## Features
 
-- **SQL Database Interaction**: Connect to a MySQL database and query it using natural language.
-- **Voice Input**: Record voice queries which are transcribed into text.
-- **Text-to-Speech**: Convert database query responses into speech.
-- **Chat History**: Maintains a session-based history of interactions, including both text and audio responses.
+- **Voice and Text Input**: Users can input queries either by typing or speaking.
+- **Real-time Database Interaction**: Processes SQL queries based on user input and retrieves data from a MySQL database.
+- **Natural Language Responses**: Converts SQL query results into human-readable answers.
+- **Text-to-Speech**: Provides audio responses using Deepgram for text-to-speech conversion.
 
-## Installation
+## Technologies Used
+
+- **Streamlit**: For building the interactive web application.
+- **Deepgram**: For text-to-speech conversion.
+- **Groq**: For audio transcription.
+- **MySQL**: For database operations.
+- **Langchain**: For handling natural language processing and SQL queries.
+
+## Setup Instructions
+
+### Prerequisites
+
+- Python 3.10
+- MySQL server
+- API keys for Deepgram and Groq (set up in a `.env` file)
+
+### Installation
 
 1. **Clone the Repository**
 
-   ```bash
-   git clone https://github.com/maryamnazir1/sql-database-assistant-chat.git
-   cd sql-database-assistant-chat
+    ```bash
+    git clone https://github.com/maryamnazir1/mysql-database-assistant.git
+    cd mysql-database-assistant
+    ```
 
-2. **Install Dependencies**
+2. **Create a Virtual Environment**
 
-   Ensure you have Python 3.7 or higher installed. Install the required Python packages using:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    ```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+3. **Install Dependencies**
 
-3. **Set Up Environment Variables**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-   Create a `.env` file in the root directory of the project with the following content:
+4. **Create a `.env` File**
 
-   ```plaintext
-   GROQ_API_KEY=your_groq_api_key
-   DG_API_KEY=your_deepgram_api_key
-   ```
+    Create a `.env` file in the root directory of the project with the following content:
 
-   Replace `your_groq_api_key` and `your_deepgram_api_key` with your actual API keys from Groq and Deepgram.
+    ```env
+    DG_API_KEY=your_deepgram_api_key
+    GROQ_API_KEY=your_groq_api_key
+    ```
+
+5. **Run the Application**
+
+    ```bash
+    streamlit run app.py
+    ```
 
 ## Usage
 
-1. **Run the Application**
+1. **Connect to Database**
 
-   Start the Streamlit application by running:
+   - Use the sidebar to input your MySQL database credentials (host, port, user, password, and database name).
+   - Click "Connect" to establish a connection.
 
-   ```bash
-   streamlit run app.py
-   ```
+2. **Interact with the Assistant**
 
-2. **Connect to Your MySQL Database**
+   - Type your query in the text input box or use the audio recorder to speak your query.
+   - The assistant will process the query, interact with the database, and provide a response.
+   - The response will be displayed as text, and an audio version will be generated and played automatically.
 
-   Use the sidebar in the Streamlit app to input your database credentials (host, port, user, password, database).
+3. **Clear Chat History**
 
-3. **Interact with the Assistant**
+   - Click the "Clear Chat History" button in the sidebar to reset the conversation.
 
-   - **Text Input**: Type your SQL-related questions into the input box.
-   - **Voice Input**: Click the microphone button to record a question.
-   - The assistant will respond with both text and an audio playback of the response.
+## File Descriptions
 
-## Project Structure
-
-- **`app.py`**: The main application file that sets up the Streamlit interface and manages user interactions.
-- **`db_sql_module.py`**: Contains functions for initializing and querying the MySQL database.
-- **`stt_module.py`**: Handles voice recording, audio file saving, and transcription using the Groq API.
-- **`tts_module.py`**: Converts text responses into speech using the Deepgram API.
-
-## Dependencies
-
-- `streamlit`
-- `python-dotenv`
-- `langchain-core`
-- `langchain-community`
-- `langchain-groq`
-- `mysql-connector-python`
-- `sounddevice`
-- `groq`
-- `deepgram-sdk`
+- **`app.py`**: The main application script that handles user interface and interactions.
+- **`utils.py`**: Contains utility functions for audio handling, including playback, speech generation, and transcription.
+- **`db_sql_module.py`**: Manages database connections and SQL query processing.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request or open an issue.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
-## Acknowledgements
-
-- [Streamlit](https://streamlit.io/) for the framework to build this data app.
-- [LangChain](https://www.langchain.com/) for enabling language model integration.
-- [Deepgram](https://deepgram.com/) for providing the text-to-speech API.
-- [Groq](https://www.groq.com/) for the speech-to-text API.
+Feel free to open issues or submit pull requests. Contributions are welcome!
